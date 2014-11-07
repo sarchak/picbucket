@@ -8,10 +8,13 @@
 
 import UIKit
 
+
 class ViewController: UIViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate, UIActionSheetDelegate {
    
     @IBOutlet weak var selectedImage: UIImageView!
 
+    @IBOutlet weak var fileName: UITextField!
+  
     @IBAction func selectImage(sender: AnyObject) {
         
         /* Supports UIAlert Controller */
@@ -78,7 +81,28 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
     func imagePickerController(picker: UIImagePickerController!, didFinishPickingImage image: UIImage!, editingInfo: [NSObject : AnyObject]!) {
         self.dismissViewControllerAnimated(true, nil)
         self.selectedImage.image = image;
+        let transferManager = AWSS3TransferManager.defaultS3TransferManager()
+        let testFileURL1 = NSURL(fileURLWithPath: NSTemporaryDirectory().stringByAppendingPathComponent("temp"))
+        let uploadRequest1 : AWSS3TransferManagerUploadRequest = AWSS3TransferManagerUploadRequest()
+
+        let data = UIImageJPEGRepresentation(image, 0.5)
+
+        let dataString: NSMutableString = "This is shrikar here"
+        data.writeToURL(testFileURL1!, atomically: true)
+        uploadRequest1.bucket = "shrikar-picbucket"
+        uploadRequest1.key =  "bingo"
+        uploadRequest1.body = testFileURL1
         
+        println(editingInfo)
+        let task = transferManager.upload(uploadRequest1)
+        task.continueWithBlock { (task) -> AnyObject! in
+            if task.error != nil {
+                println("Error: \(task.error)")
+            } else {
+                println("Upload successful")
+            }
+            return nil
+        }
     }
     
     func actionSheet(actionSheet: UIActionSheet, clickedButtonAtIndex buttonIndex: Int) {
@@ -108,6 +132,33 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
     }
     override func viewDidLoad() {
         super.viewDidLoad()
+        let downloadingFilePath1 = NSTemporaryDirectory().stringByAppendingPathComponent("temp-download")
+        let downloadingFileURL1 = NSURL(fileURLWithPath: downloadingFilePath1 )
+        let transferManager = AWSS3TransferManager.defaultS3TransferManager()
+        
+        
+        let readRequest1 : AWSS3TransferManagerDownloadRequest = AWSS3TransferManagerDownloadRequest()
+        readRequest1.bucket = "shrikar-picbucket"
+        readRequest1.key =  "bingo"
+        readRequest1.downloadingFileURL = downloadingFileURL1
+        
+        let task = transferManager.download(readRequest1)
+        task.continueWithBlock { (task) -> AnyObject! in
+            println(task.error)
+            if task.error != nil {
+            } else {
+                dispatch_async(dispatch_get_main_queue()
+                    , { () -> Void in
+                        self.selectedImage.image = UIImage(contentsOfFile: downloadingFilePath1)
+                        self.selectedImage.setNeedsDisplay()
+                        self.selectedImage.reloadInputViews()
+
+                })
+                println("Fetched image")
+            }
+            return nil
+        }
+
     }
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()

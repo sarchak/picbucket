@@ -12,10 +12,24 @@ import UIKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-
+    let cognitoAccountId = "xxxxxxxxxxxxxxxxx"
+    let cognitoIdentityPoolId = "xxxxxxxxxxxxxxxxx"
+    let cognitoUnauthRoleArn = "xxxxxxxxxxxxxxxxx"
+    let cognitoAuthRoleArn = "xxxxxxxxxxxxxxxxx"
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
         // Override point for customization after application launch.
+        let credentialsProvider = AWSCognitoCredentialsProvider.credentialsWithRegionType(
+            AWSRegionType.USEast1,
+            accountId: cognitoAccountId,
+            identityPoolId: cognitoIdentityPoolId,
+            unauthRoleArn: cognitoUnauthRoleArn,
+            authRoleArn: cognitoAuthRoleArn)
+        let defaultServiceConfiguration = AWSServiceConfiguration(
+            region: AWSRegionType.USEast1,
+            credentialsProvider: credentialsProvider)
+        AWSServiceManager.defaultServiceManager().setDefaultServiceConfiguration(defaultServiceConfiguration)
+        
         return true
     }
 
